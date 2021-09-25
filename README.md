@@ -14,11 +14,15 @@ For help with getting started, you can check out the documentation for the platf
 
 Install guide:
 
-‘‘git clone https://github.com/blinkhash/blinkhash-server.git
+git clone https://github.com/blinkhash/blinkhash-server.git
+
 cd blinkhash-server
+
 npm install
+
 [change configurations here]
-npm run start-v2‘‘
+
+npm run start-v2
 
 #### Need Support?
 
