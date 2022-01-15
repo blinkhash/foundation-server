@@ -19,9 +19,17 @@ const PoolApi = require('./api.js');
 const PoolServer = function (logger, client) {
 
   const _this = this;
+  process.setMaxListeners(0);
+
   this.client = client;
   this.poolConfigs = JSON.parse(process.env.poolConfigs);
   this.portalConfig = JSON.parse(process.env.portalConfig);
+
+  // Handle Errors with API Responses
+  this.handleErrors = function(api, error, res) {
+    logger.error('Server', 'Website', `API call threw an unknown error: (${ error })`);
+    api.buildResponse(500, 'The server was unable to handle your request. Verify your input or try again later', res);
+  };
 
   // Build Server w/ Middleware
   this.buildServer = function() {
@@ -31,7 +39,6 @@ const PoolServer = function (logger, client) {
     const api = new PoolApi(_this.client, _this.poolConfigs, _this.portalConfig);
     const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
     const cache = apicache.options({}).middleware;
-
 
     // Establish Middleware
     app.set('trust proxy', 1);
@@ -43,26 +50,24 @@ const PoolServer = function (logger, client) {
 
     // Handle API Requests
     /* istanbul ignore next */
+    app.get('/api/v1/:pool/:endpoint?', (req, res) => {
+      api.handleApiV1(req, (code, message) => {
+        api.buildResponse(code, message, res);
+      });
+    });
+
+    // ERRORS - Handles API Errors
+    /* istanbul ignore next */
     /* eslint-disable-next-line no-unused-vars */
-    app.get('/api/v1/:pool/:endpoint?', (req, res, next) => {
-      api.handleApiV1(req, res);
+    app.use((err, req, res, next) => {
+      _this.handleErrors(api, err, res);
     });
 
     // Handle Health Check
     /* istanbul ignore next */
-    /* eslint-disable-next-line no-unused-vars */
-    app.get('/health/', (req, res, next) => {
+    app.get('/health/', (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ 'status': 'OK' }));
-    });
-
-    // Handle Error Responses
-    /* istanbul ignore next */
-    /* eslint-disable-next-line no-unused-vars */
-    app.use((err, req, res, next) => {
-      api.buildPayload('', '/error/', api.messages.invalid, null, res);
-      logger.error('Server', 'Website', `API call threw an unknown error: (${ err })`);
-      next();
     });
 
     // Set Existing Server Variable

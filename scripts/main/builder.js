@@ -87,6 +87,7 @@ const PoolBuilder = function(logger, portalConfig) {
 
     // Handle Worker Events
     worker.on('message', (msg) => {
+      let roundValue;
       switch (msg.type) {
       case 'banIP':
         Object.keys(cluster.workers).forEach(id => {
@@ -96,7 +97,7 @@ const PoolBuilder = function(logger, portalConfig) {
         });
         break;
       case 'roundUpdate':
-        const roundValue = _this.roundCounter.next();
+        roundValue = _this.roundCounter.next();
         Object.keys(cluster.workers).forEach(id => {
           if (cluster.workers[id].type === 'worker') {
             cluster.workers[id].send({ type: 'roundUpdate', pool: msg.pool, value: roundValue });
@@ -123,7 +124,7 @@ const PoolBuilder = function(logger, portalConfig) {
 
     // Check if No Configs Exist
     if (Object.keys(_this.poolConfigs).length === 0) {
-      logger.warning('Builder', 'Workers', 'No pool configs exists or are enabled in configs folder. No pools started.');
+      logger.warning('Builder', 'Workers', 'No valid pool configs exist or are enabled in configs folder. No pools started.');
       return;
     }
 

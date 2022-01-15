@@ -58,7 +58,7 @@ exports.combineMiners = function(shared, solo) {
     count += exports.countMiners(solo);
   }
   return count;
-}
+};
 
 // Count Number of Miners
 exports.countMiners = function(shares) {
@@ -98,7 +98,7 @@ exports.combineWorkers = function(shared, solo) {
     count += exports.countWorkers(solo);
   }
   return count;
-}
+};
 
 // Count Number of Workers
 exports.countWorkers = function(shares) {
@@ -107,7 +107,6 @@ exports.countWorkers = function(shares) {
   if (shares) {
     shares.forEach((share) => {
       if (share.worker) {
-        const address = share.worker.split('.')[0];
         if (!(workers.includes(share.worker))) {
           count += 1;
           workers.push(share.worker);
@@ -247,7 +246,7 @@ exports.processMiners = function(shares, hashrate, times, multiplier, hashrateWi
         } else {
           if (!active || (active && hashrateValue > 0)) {
             miners[address] = {
-              worker: address,
+              miner: address,
               shares: shareValue,
               times: timeValue || null,
               hashrate: (multiplier * hashrateValue) / hashrateWindow,
@@ -375,7 +374,7 @@ exports.satoshisToCoins = function(satoshis, magnitude, precision) {
 // Validate Entered Address
 exports.validateInput = function(address) {
   if (address.length >= 1) {
-    address = address.toString().replace(/[^a-zA-Z0-9.]+/g, '');
+    address = address.toString().replace(/[^a-zA-Z0-9.-]+/g, '');
   }
   return address;
 };

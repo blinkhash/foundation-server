@@ -11,6 +11,7 @@
 const config = {};
 config.enabled = false;
 config.name = 'Pool1';
+config.coins = ['Bitcoin'];
 
 // Banning Configuration
 config.banning = {};
@@ -26,6 +27,10 @@ const ports1 = {};
 ports1.port = 3002;
 ports1.enabled = true;
 ports1.type = 'shared';
+ports1.ssl = {};
+ports1.ssl.enabled = false;
+ports1.ssl.key = "";
+ports1.ssl.cert = "";
 ports1.difficulty = {};
 ports1.difficulty.initial = 32;
 ports1.difficulty.minimum = 8;
@@ -39,6 +44,10 @@ const ports2 = {};
 ports2.port = 3003;
 ports2.enabled = true;
 ports2.type = 'solo';
+ports2.ssl = {};
+ports2.ssl.enabled = false;
+ports2.ssl.key = "";
+ports2.ssl.cert = "";
 ports2.difficulty = {};
 ports2.difficulty.initial = 32;
 ports2.difficulty.minimum = 8;

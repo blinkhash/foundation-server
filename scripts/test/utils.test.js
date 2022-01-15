@@ -105,28 +105,28 @@ describe('Test utility functionality', () => {
 
   test('Test implemented countMiners [1]', () => {
     const shares = [
-      { time: 1623901893182, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901919389, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 }];
+      { time: 1623901893182, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901919389, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 }];
     expect(utils.countMiners(shares)).toBe(1);
   });
 
   test('Test implemented countMiners [2]', () => {
     const shares = [
-      { time: 1623901893182, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1", solo: false, difficulty: 8 },
-      { time: 1623901919389, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 }];
+      { time: 1623901893182, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1', solo: false, difficulty: 8 },
+      { time: 1623901919389, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 }];
     expect(utils.countMiners(shares)).toBe(1);
   });
 
   test('Test implemented countMiners [3]', () => {
     const shares = [
-      { time: 1623901893182, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1", solo: false, difficulty: 8 },
-      { time: 1623901919389, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b.worker1", solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1", solo: false, difficulty: 8 }];
+      { time: 1623901893182, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1', solo: false, difficulty: 8 },
+      { time: 1623901919389, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b.worker1', solo: false, difficulty: 8 },
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1', solo: false, difficulty: 8 }];
     expect(utils.countMiners(shares)).toBe(4);
   });
 
@@ -134,8 +134,8 @@ describe('Test utility functionality', () => {
     const shares = [
       { time: 1623901893182, solo: false, difficulty: 8 },
       { time: 1623901919389, solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1", solo: false, difficulty: 8 }];
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1', solo: false, difficulty: 8 }];
     expect(utils.countMiners(shares)).toBe(2);
   });
 
@@ -184,28 +184,28 @@ describe('Test utility functionality', () => {
 
   test('Test implemented countWorkers [1]', () => {
     const shares = [
-      { time: 1623901893182, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901919389, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 }];
+      { time: 1623901893182, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901919389, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 }];
     expect(utils.countWorkers(shares)).toBe(1);
   });
 
   test('Test implemented countWorkers [2]', () => {
     const shares = [
-      { time: 1623901893182, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1", solo: false, difficulty: 8 },
-      { time: 1623901919389, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2", solo: false, difficulty: 8 }];
+      { time: 1623901893182, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1', solo: false, difficulty: 8 },
+      { time: 1623901919389, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 },
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker2', solo: false, difficulty: 8 }];
     expect(utils.countWorkers(shares)).toBe(2);
   });
 
   test('Test implemented countWorkers [3]', () => {
     const shares = [
-      { time: 1623901893182, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1", solo: false, difficulty: 8 },
-      { time: 1623901919389, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b.worker1", solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1", solo: false, difficulty: 8 }];
+      { time: 1623901893182, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a.worker1', solo: false, difficulty: 8 },
+      { time: 1623901919389, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b.worker1', solo: false, difficulty: 8 },
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1', solo: false, difficulty: 8 }];
     expect(utils.countWorkers(shares)).toBe(4);
   });
 
@@ -213,8 +213,8 @@ describe('Test utility functionality', () => {
     const shares = [
       { time: 1623901893182, solo: false, difficulty: 8 },
       { time: 1623901919389, solo: false, difficulty: 8 },
-      { time: 1623901929800, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1", solo: false, difficulty: 8 },
-      { time: 1623901944054, worker: "tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1", solo: false, difficulty: 8 }];
+      { time: 1623901929800, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker1', solo: false, difficulty: 8 },
+      { time: 1623901944054, worker: 'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3d.worker1', solo: false, difficulty: 8 }];
     expect(utils.countWorkers(shares)).toBe(2);
   });
 
@@ -450,15 +450,15 @@ describe('Test utility functionality', () => {
       'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker2': 75.15};
     const processed = utils.processMiners(shares, hashrate, times, 1, 300, false);
     expect(processed.length).toBe(3);
-    expect(processed[0].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
+    expect(processed[0].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
     expect(processed[0].hashrate).toBe(0.02666666666666667);
     expect(processed[0].shares).toBe(8);
     expect(processed[0].times).toBe(20.15);
-    expect(processed[1].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b');
+    expect(processed[1].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b');
     expect(processed[1].hashrate).toBe(0.02666666666666667);
     expect(processed[1].shares).toBe(8);
     expect(processed[1].times).toBe(18.75);
-    expect(processed[2].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
+    expect(processed[2].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
     expect(processed[2].hashrate).toBe(0.05333333333333334);
     expect(processed[2].shares).toBe(16);
     expect(processed[2].times).toBe(75.15);
@@ -477,11 +477,11 @@ describe('Test utility functionality', () => {
       '{"time":1623901944054,"worker":"tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker2","solo":false,"difficulty":8}'];
     const processed = utils.processMiners(shares, hashrate, null, 1, 300, false);
     expect(processed.length).toBe(2);
-    expect(processed[0].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b');
+    expect(processed[0].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b');
     expect(processed[0].hashrate).toBe(0.02666666666666667);
     expect(processed[0].shares).toBe(8);
     expect(processed[0].effort).toBe(76.12);
-    expect(processed[1].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
+    expect(processed[1].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
     expect(processed[1].hashrate).toBe(0.05333333333333334);
     expect(processed[1].shares).toBe(16);
     expect(processed[1].effort).toBe(0);
@@ -504,11 +504,11 @@ describe('Test utility functionality', () => {
       'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker2': 75.15};
     const processed = utils.processMiners(shares, hashrate, times, 1, 300, true);
     expect(processed.length).toBe(2);
-    expect(processed[0].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
+    expect(processed[0].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
     expect(processed[0].hashrate).toBe(0.02666666666666667);
     expect(processed[0].shares).toBe(16);
     expect(processed[0].times).toBe(20.15);
-    expect(processed[1].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
+    expect(processed[1].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
     expect(processed[1].hashrate).toBe(0.05333333333333334);
     expect(processed[1].shares).toBe(16);
     expect(processed[1].times).toBe(75.15);
@@ -530,11 +530,11 @@ describe('Test utility functionality', () => {
       'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker2': 18.17};
     const processed = utils.processMiners(shares, hashrate, times, 1, 300, false);
     expect(processed.length).toBe(2);
-    expect(processed[0].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
+    expect(processed[0].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
     expect(processed[0].hashrate).toBe(0.02666666666666667);
     expect(processed[0].shares).toBe(16);
     expect(processed[0].times).toBe(0);
-    expect(processed[1].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
+    expect(processed[1].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
     expect(processed[1].hashrate).toBe(0.05333333333333334);
     expect(processed[1].shares).toBe(16);
     expect(processed[1].times).toBe(20.15);
@@ -557,15 +557,15 @@ describe('Test utility functionality', () => {
       'tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c.worker2': 18.17};
     const processed = utils.processMiners(shares, hashrate, times, 1, 300, false);
     expect(processed.length).toBe(3);
-    expect(processed[0].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
+    expect(processed[0].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3a');
     expect(processed[0].hashrate).toBe(0.02666666666666667);
     expect(processed[0].shares).toBe(16);
     expect(processed[0].times).toBe(0);
-    expect(processed[1].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b');
+    expect(processed[1].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3b');
     expect(processed[1].hashrate).toBe(0);
     expect(processed[1].shares).toBe(8);
     expect(processed[1].times).toBe(20.15);
-    expect(processed[2].worker).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
+    expect(processed[2].miner).toBe('tltc1qkek8r3uymzqyajzezqgl84u08c0z8shjuwqv3c');
     expect(processed[2].hashrate).toBe(0.05333333333333334);
     expect(processed[2].shares).toBe(16);
     expect(processed[2].times).toBe(20.15);
@@ -584,7 +584,7 @@ describe('Test utility functionality', () => {
       'RFeE924XmUhqJqUpRJykryxumNBwiMfZ4j.minerLHR': 20530.15};
     const processed = utils.processMiners(shares, hashrate, times, 1, 300, false);
     expect(processed.length).toBe(1);
-    expect(processed[0].worker).toBe('RFeE924XmUhqJqUpRJykryxumNBwiMfZ4j');
+    expect(processed[0].miner).toBe('RFeE924XmUhqJqUpRJykryxumNBwiMfZ4j');
     expect(processed[0].hashrate).toBe(0.08);
     expect(processed[0].shares).toBe(5713);
     expect(processed[0].times).toBe(20530.15);
