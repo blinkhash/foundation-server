@@ -27,10 +27,7 @@ const ports1 = {};
 ports1.port = 3002;
 ports1.enabled = true;
 ports1.type = 'shared';
-ports1.ssl = {};
-ports1.ssl.enabled = false;
-ports1.ssl.key = "";
-ports1.ssl.cert = "";
+ports1.tls = false;
 ports1.difficulty = {};
 ports1.difficulty.initial = 32;
 ports1.difficulty.minimum = 8;
@@ -44,10 +41,7 @@ const ports2 = {};
 ports2.port = 3003;
 ports2.enabled = true;
 ports2.type = 'solo';
-ports2.ssl = {};
-ports2.ssl.enabled = false;
-ports2.ssl.key = "";
-ports2.ssl.cert = "";
+ports2.tls = false;
 ports2.difficulty = {};
 ports2.difficulty.initial = 32;
 ports2.difficulty.minimum = 8;
@@ -63,13 +57,21 @@ config.p2p.enabled = true;
 config.p2p.host = '127.0.0.1';
 config.p2p.port = 8333;
 
+// Statistics Configuration
+config.statistics = {};
+config.statistics.blocksInterval = 20; // s;
+config.statistics.hashrateInterval = 20; // s;
+config.statistics.historicalInterval = 1800; // s;
+config.statistics.refreshInterval = 20; // s;
+config.statistics.paymentsInterval = 20; // s;
+config.statistics.hashrateWindow = 300; // s;
+config.statistics.historicalWindow = 86400; // s;
+
 // Settings Configuration
 config.settings = {};
-config.settings.blockRefreshInterval = 1000;
-config.settings.statisticsRefreshInterval = 20000;
-config.settings.connectionTimeout = 600;
-config.settings.hashrateWindow = 300;
-config.settings.jobRebroadcastTimeout = 60;
+config.settings.blockRefreshInterval = 1000; // ms;
+config.settings.connectionTimeout = 600; // s;
+config.settings.jobRebroadcastTimeout = 60; // s;
 config.settings.tcpProxyProtocol = false;
 
 // Primary Configuration
@@ -85,9 +87,9 @@ config.primary.coin.name = 'Bitcoin';
 config.primary.coin.symbol = 'BTC';
 config.primary.coin.asicboost = true;
 config.primary.coin.getinfo = false;
+config.primary.coin.hybrid = false;
 config.primary.coin.parameters = {};
 config.primary.coin.segwit = true;
-config.primary.coin.staking = false;
 config.primary.coin.version = 4;
 
 // Algorithm Configuration
@@ -138,8 +140,8 @@ config.primary.daemons.push(daemons1);
 // Payment Configuration
 config.primary.payments = {};
 config.primary.payments.enabled = true;
-config.primary.payments.checkInterval = 20;
-config.primary.payments.paymentInterval = 7200;
+config.primary.payments.checkInterval = 20; // s;
+config.primary.payments.paymentInterval = 7200; // s;
 config.primary.payments.minConfirmations = 10;
 config.primary.payments.minPayment = 0.005;
 config.primary.payments.transactionFee = 0.0004;

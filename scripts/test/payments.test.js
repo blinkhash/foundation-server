@@ -4,6 +4,7 @@
  *
  */
 
+const MockDate = require('mockdate');
 const redis = require('redis-mock');
 jest.mock('redis', () => jest.requireActual('redis-mock'));
 
@@ -66,22 +67,8 @@ describe('Test payments functionality', () => {
   test('Test initialization of payments', () => {
     const poolPayments = new PoolPayments(logger, client);
     expect(typeof poolPayments.portalConfig).toBe('object');
-    expect(typeof poolPayments.checkEnabled).toBe('function');
+    expect(typeof poolPayments.handleManagement).toBe('function');
     expect(typeof poolPayments.handleIntervals).toBe('function');
-  });
-
-  test('Test checking for enabled configurations [1]', () => {
-    const poolPayments = new PoolPayments(logger, client);
-    poolPayments.checkEnabled();
-    expect(poolPayments.pools.length).toBe(1);
-    expect(poolPayments.pools[0]).toBe('Pool1');
-  });
-
-  test('Test checking for enabled configurations [2]', () => {
-    const poolPayments = new PoolPayments(logger, client);
-    poolPayments.poolConfigs['Pool1'].primary.payments.enabled = false;
-    poolPayments.checkEnabled();
-    expect(poolPayments.pools.length).toBe(0);
   });
 
   test('Test round shares if deleteable [1]', () => {
@@ -234,23 +221,34 @@ describe('Test payments functionality', () => {
   });
 
   test('Test handling of orphan shares/times [1]', (done) => {
+    MockDate.set(1637878085886);
     const poolPayments = new PoolPayments(logger, client);
     const round = { orphanShares: { 'example': 8 }, orphanTimes: { 'example': 1 }};
     const expected = [
-      ['hincrby', 'Pool1:rounds:primary:current:counts', 'valid', 1],
-      ['hincrby', 'Pool1:rounds:primary:current:shares'],
-      ['hincrbyfloat', 'Pool1:rounds:primary:current:times', 'example', 1]];
+      ['hincrby', 'Pool1:rounds:primary:current:shared:counts', 'valid', 1],
+      ['hset', 'Pool1:rounds:primary:current:shared:shares', 'example', '{"time":1637878085886,"effort":0,"identifier":null,"round":"orphan","solo":false,"times":1,"types":{"valid":1,"invalid":0,"stale":0},"work":8,"worker":"example"}']];
     poolPayments.handleOrphans(round, 'Pool1', 'primary', (error, results) => {
       expect(error).toBe(null);
-      expect(results.length).toBe(3);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1].slice(0, 2)).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
+      expect(results).toStrictEqual(expected);
       done();
     });
   });
 
   test('Test handling of orphan shares/times [2]', (done) => {
+    MockDate.set(1637878085886);
+    const poolPayments = new PoolPayments(logger, client);
+    const round = { orphanShares: { 'example': 8 }, orphanTimes: {}};
+    const expected = [
+      ['hincrby', 'Pool1:rounds:primary:current:shared:counts', 'valid', 1],
+      ['hset', 'Pool1:rounds:primary:current:shared:shares', 'example', '{"time":1637878085886,"effort":0,"identifier":null,"round":"orphan","solo":false,"times":0,"types":{"valid":1,"invalid":0,"stale":0},"work":8,"worker":"example"}']];
+    poolPayments.handleOrphans(round, 'Pool1', 'primary', (error, results) => {
+      expect(error).toBe(null);
+      expect(results).toStrictEqual(expected);
+      done();
+    });
+  });
+
+  test('Test handling of orphan shares/times [3]', (done) => {
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.handleOrphans({}, 'Bitcoin', 'primary', (error, results) => {
       expect(error).toBe(null);
@@ -789,7 +787,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.address = 'tltc1qa0z9fsraqpvasgfj6c72a59ztx0xh9vfv9ccwd';
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('generate');
       expect(results[0][0].reward).toBe(11.87510021);
@@ -806,7 +804,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(true);
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching('Could not get transactions from daemon'));
       expect(results).toStrictEqual([]);
@@ -826,7 +824,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.address = 'tltc1qa0z9fsraqpvasgfj6c72a59ztx0xh9vfv9ccwd';
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('immature');
       expect(results[0][0].reward).toBe(11.87510021);
@@ -848,7 +846,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.address = 'tltc1qa0z9fsraqpvasgfj6c72a59ztx0xh9vfv9ccwd';
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('generate');
       expect(results[0][0].reward).toBe(11.87510021);
@@ -867,7 +865,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.address = 'tltc1qa0z9fsraqpvasgfj6c72a59ztx0xh9vfv9ccwd';
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('orphan');
       expect(results[0][0].delete).toBe(true);
@@ -888,7 +886,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.payments.coinPrecision = 8;
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('generate');
       expect(results[0][0].reward).toBe(11.87510021);
@@ -910,7 +908,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.address = 'tltc1qa0z9fsraqpvasgfj6c72a59ztx0xh9vfv9ccwd';
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('generate');
       expect(results[0][0].reward).toBe(11.87510021);
@@ -928,7 +926,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching('Daemon reports invalid transaction'));
       expect(results[0][0].category).toBe('kicked');
@@ -947,7 +945,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching('Daemon reports no details for transaction'));
       expect(results[0][0].category).toBe('kicked');
@@ -966,7 +964,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'primary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching('Unable to load transaction'));
       expect(results).toStrictEqual([[], []]);
@@ -987,7 +985,7 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].auxiliary.payments.coinPrecision = 8;
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ transaction: 'efaab94af3973b6d1148d030a75abbea6b5e2af4e4c989738393a55e1d44fd2c' }];
-    poolPayments.handleTransactions(daemon, config, 'auxiliary', [rounds, []], (error, results) => {
+    poolPayments.handleTransactions(daemon, config, 'auxiliary', [rounds, [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('generate');
       expect(results[0][0].reward).toBe(11.87510021);
@@ -998,52 +996,10 @@ describe('Test payments functionality', () => {
     });
   });
 
-  test('Test main times handling [1]', (done) => {
-    const commands = [
-      ['hincrbyfloat', 'Pool1:rounds:primary:round-180:times', 'worker1', 20.15],
-      ['hincrbyfloat', 'Pool1:rounds:primary:round-180:times', 'worker2', 163.50]];
-    mockSetupClient(client, commands, 'Bitcoin', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const poolPayments = new PoolPayments(logger, client);
-      const config = poolPayments.poolConfigs['Pool1'];
-      const rounds = [{ height: 180 }];
-      poolPayments.handleTimes(config, 'primary', [rounds, []], (error, results) => {
-        expect(error).toBe(null);
-        expect(results[2][0]['worker1']).toBe(20.15);
-        expect(results[2][0]['worker2']).toBe(163.50);
-        console.log.mockClear();
-        done();
-      });
-    });
-  });
-
-  test('Test main times handling [2]', (done) => {
-    const commands = [
-      ['hincrbyfloat', 'Pool1:rounds:primary:round-180:times', 'worker1', 20.15],
-      ['hincrbyfloat', 'Pool1:rounds:primary:round-180:times', 'worker2', 163.50],
-      ['hincrbyfloat', 'Pool1:rounds:primary:round-181:times', 'worker1', 80.43],
-      ['hincrbyfloat', 'Pool1:rounds:primary:round-181:times', 'worker2', 121.637]];
-    mockSetupClient(client, commands, 'Bitcoin', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const poolPayments = new PoolPayments(logger, client);
-      const config = poolPayments.poolConfigs['Pool1'];
-      const rounds = [{ height: 180 }, { height: 181 }];
-      poolPayments.handleTimes(config, 'primary', [rounds, []], (error, results) => {
-        expect(error).toBe(null);
-        expect(results[2][0]['worker1']).toBe(20.15);
-        expect(results[2][0]['worker2']).toBe(163.50);
-        expect(results[2][1]['worker1']).toBe(80.43);
-        expect(results[2][1]['worker2']).toBe(121.637);
-        console.log.mockClear();
-        done();
-      });
-    });
-  });
-
   test('Test main shares handling [1]', (done) => {
     const commands = [
-      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker1', JSON.stringify({ time: 0, difficulty: 8, worker: 'worker1', solo: true })],
-      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker2', JSON.stringify({ time: 0, difficulty: 28, worker: 'worker2', solo: false })]];
+      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker1', JSON.stringify({ time: 0, work: 8, worker: 'worker1', times: 20, solo: true })],
+      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker2', JSON.stringify({ time: 0, work: 28, worker: 'worker2', times: 40, solo: false })]];
     mockSetupClient(client, commands, 'Bitcoin', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
       const poolPayments = new PoolPayments(logger, client);
@@ -1051,6 +1007,8 @@ describe('Test payments functionality', () => {
       const rounds = [{ height: 180 }];
       poolPayments.handleShares(config, 'primary', [rounds, [], []], (error, results) => {
         expect(error).toBe(null);
+        expect(results[2][0]['worker1']).toBe(20);
+        expect(results[2][0]['worker2']).toBe(40);
         expect(results[3][0]['worker1']).toBe(8);
         expect(results[4][0]['worker2']).toBe(28);
         console.log.mockClear();
@@ -1061,10 +1019,12 @@ describe('Test payments functionality', () => {
 
   test('Test main shares handling [2]', (done) => {
     const commands = [
-      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker1', JSON.stringify({ time: 0, difficulty: 8, worker: 'worker1', solo: true })],
-      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker2', JSON.stringify({ time: 0, difficulty: 28, worker: 'worker2', solo: false })],
-      ['hset', 'Pool1:rounds:primary:round-181:shares', 'worker1', JSON.stringify({ time: 0, difficulty: 26, worker: 'worker1', solo: true })],
-      ['hset', 'Pool1:rounds:primary:round-181:shares', 'worker2', JSON.stringify({ time: 0, difficulty: 40, worker: 'worker2', solo: false })]];
+      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker1.w1', JSON.stringify({ time: 0, work: 8, worker: 'worker1.w1', times: 40, solo: true })],
+      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker2.w1', JSON.stringify({ time: 0, work: 28, worker: 'worker2.w1', times: 25, solo: false })],
+      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker1.w2', JSON.stringify({ time: 0, work: 8, worker: 'worker1.w2', times: 45, solo: true })],
+      ['hset', 'Pool1:rounds:primary:round-180:shares', 'worker2.w2', JSON.stringify({ time: 0, work: 28, worker: 'worker2.w2', times: 30, solo: false })],
+      ['hset', 'Pool1:rounds:primary:round-181:shares', 'worker1', JSON.stringify({ time: 0, work: 26, worker: 'worker1', times: 60, solo: true })],
+      ['hset', 'Pool1:rounds:primary:round-181:shares', 'worker2', JSON.stringify({ time: 0, work: 40, worker: 'worker2', times: 43, solo: false })]];
     mockSetupClient(client, commands, 'Bitcoin', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
       const poolPayments = new PoolPayments(logger, client);
@@ -1072,8 +1032,10 @@ describe('Test payments functionality', () => {
       const rounds = [{ height: 180 }, { height: 181 }];
       poolPayments.handleShares(config, 'primary', [rounds, [], []], (error, results) => {
         expect(error).toBe(null);
-        expect(results[3][0]['worker1']).toBe(8);
-        expect(results[4][0]['worker2']).toBe(28);
+        expect(results[2][0]['worker1']).toBe(45);
+        expect(results[2][0]['worker2']).toBe(30);
+        expect(results[3][0]['worker1']).toBe(16);
+        expect(results[4][0]['worker2']).toBe(56);
         expect(results[3][1]['worker1']).toBe(26);
         expect(results[4][1]['worker2']).toBe(40);
         console.log.mockClear();
@@ -1093,7 +1055,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', reward: 12.5 }, { category: 'generate', reward: 12.5 }];
-    poolPayments.handleOwed(daemon, config, 'checks', 'primary', [rounds, [], [], [], []], (error, results) => {
+    poolPayments.handleOwed(daemon, config, 'checks', 'primary', [rounds, [], [], [], [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('immature');
       expect(results[0][0].reward).toBe(12.5);
@@ -1183,7 +1145,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'generate', reward: 500 }];
-    poolPayments.handleOwed(daemon, config, 'payments', 'primary', [rounds, [], [], [], []], (error, results) => {
+    poolPayments.handleOwed(daemon, config, 'payments', 'primary', [rounds, [], [], [], [], []], (error, results) => {
       expect(error).toBe(null);
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching('Insufficient funds'));
       expect(results[0][0].category).toBe('generate');
@@ -1205,7 +1167,7 @@ describe('Test payments functionality', () => {
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', reward: 12.5 }, { category: 'generate', reward: 12.5 }];
-    poolPayments.handleOwed(daemon, config, 'checks', 'auxiliary', [rounds, [], [], [], []], (error, results) => {
+    poolPayments.handleOwed(daemon, config, 'checks', 'auxiliary', [rounds, [], [], [], [], []], (error, results) => {
       expect(error).toBe(null);
       expect(results[0][0].category).toBe('immature');
       expect(results[0][0].reward).toBe(12.5);
@@ -1352,9 +1314,12 @@ describe('Test payments functionality', () => {
     poolPayments.poolConfigs['Pool1'].primary.payments.processingFee = parseFloat(0.0004);
     const daemon = new Stratum.daemon([poolConfig.primary.payments.daemon], () => {});
     const config = poolPayments.poolConfigs['Pool1'];
+    const expected = [
+      ["zadd", "Pool1:payments:primary:records", 1637878085, "{\"time\":1637878085886,\"paid\":117.12181095,\"miners\":3,\"transaction\":\"transactionID\"}"]];
     poolPayments.handleSending(daemon, config, 'primary', [mockPayments.rounds, mockPayments.workers1], (error, results) => {
       expect(error).toBe(null);
       expect(results.length).toBe(3);
+      expect(results[2]).toStrictEqual(expected);
       nock.cleanAll();
       console.log.mockClear();
       done();
@@ -1501,6 +1466,7 @@ describe('Test payments functionality', () => {
   });
 
   test('Test final updates given pipeline end [1]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1510,23 +1476,18 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { immature: 1250000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 12.5]];
     poolPayments.handleUpdates(config, 'checks', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 12.5],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0]];
-      expect(results.length).toBe(4);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2].slice(0, 3)).toStrictEqual(expected[2]);
-      expect(results[3].slice(0, 3)).toStrictEqual(expected[3]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [2]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1536,27 +1497,20 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { immature: 1250000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 12.5],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 12.5],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(6);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1].slice(0, 3)).toStrictEqual(expected[1]);
-      expect(results[2].slice(0, 3)).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4].slice(0, 3)).toStrictEqual(expected[4]);
-      expect(results[5].slice(0, 3)).toStrictEqual(expected[5]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [3]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1566,27 +1520,20 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { generate: 1250000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(6);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1].slice(0, 3)).toStrictEqual(expected[1]);
-      expect(results[2].slice(0, 3)).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4].slice(0, 3)).toStrictEqual(expected[4]);
-      expect(results[5].slice(0, 3)).toStrictEqual(expected[5]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [4]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1596,35 +1543,23 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'generate', height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { generate: 1250000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
+      ['del', 'Pool1:rounds:primary:round-180:counts'],
+      ['del', 'Pool1:rounds:primary:round-180:shares'],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
-        ['del', 'Pool1:rounds:primary:round-180:counts'],
-        ['del', 'Pool1:rounds:primary:round-180:shares'],
-        ['del', 'Pool1:rounds:primary:round-180:times'],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(10);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4]).toStrictEqual(expected[4]);
-      expect(results[5].slice(0, 3)).toStrictEqual(expected[5]);
-      expect(results[6].slice(0, 3)).toStrictEqual(expected[6]);
-      expect(results[7]).toStrictEqual(expected[7]);
-      expect(results[8].slice(0, 3)).toStrictEqual(expected[8]);
-      expect(results[9].slice(0, 3)).toStrictEqual(expected[9]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [5]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1634,23 +1569,18 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'generate', height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { generate: 1250000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:generate', 'example1', 12.5],
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0]];
     poolPayments.handleUpdates(config, 'checks', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:generate', 'example1', 12.5],
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0]];
-      expect(results.length).toBe(4);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2].slice(0, 3)).toStrictEqual(expected[2]);
-      expect(results[3].slice(0, 3)).toStrictEqual(expected[3]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [6]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1660,41 +1590,26 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'generate', height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { sent: 12.5 }};
+    const expected = [
+      ['hincrbyfloat', 'Pool1:payments:primary:paid', 'example1', 12.5],
+      ['hset', 'Pool1:payments:primary:balances', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
+      ['del', 'Pool1:rounds:primary:round-180:counts'],
+      ['del', 'Pool1:rounds:primary:round-180:shares'],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 12.5],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hincrbyfloat', 'Pool1:payments:primary:paid', 'example1', 12.5],
-        ['hset', 'Pool1:payments:primary:balances', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
-        ['del', 'Pool1:rounds:primary:round-180:counts'],
-        ['del', 'Pool1:rounds:primary:round-180:shares'],
-        ['del', 'Pool1:rounds:primary:round-180:times'],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 12.5],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(13);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4]).toStrictEqual(expected[4]);
-      expect(results[5]).toStrictEqual(expected[5]);
-      expect(results[6]).toStrictEqual(expected[6]);
-      expect(results[7]).toStrictEqual(expected[7]);
-      expect(results[8].slice(0, 3)).toStrictEqual(expected[8]);
-      expect(results[9].slice(0, 3)).toStrictEqual(expected[9]);
-      expect(results[10]).toStrictEqual(expected[10]);
-      expect(results[11].slice(0, 3)).toStrictEqual(expected[11]);
-      expect(results[12].slice(0, 3)).toStrictEqual(expected[12]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [7]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1704,41 +1619,26 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'generate', height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { sent: 12.5, change: 0 }};
+    const expected = [
+      ['hincrbyfloat', 'Pool1:payments:primary:paid', 'example1', 12.5],
+      ['hset', 'Pool1:payments:primary:balances', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
+      ['del', 'Pool1:rounds:primary:round-180:counts'],
+      ['del', 'Pool1:rounds:primary:round-180:shares'],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 12.5],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hincrbyfloat', 'Pool1:payments:primary:paid', 'example1', 12.5],
-        ['hset', 'Pool1:payments:primary:balances', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
-        ['del', 'Pool1:rounds:primary:round-180:counts'],
-        ['del', 'Pool1:rounds:primary:round-180:shares'],
-        ['del', 'Pool1:rounds:primary:round-180:times'],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 12.5],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(13);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4]).toStrictEqual(expected[4]);
-      expect(results[5]).toStrictEqual(expected[5]);
-      expect(results[6]).toStrictEqual(expected[6]);
-      expect(results[7]).toStrictEqual(expected[7]);
-      expect(results[8].slice(0, 3)).toStrictEqual(expected[8]);
-      expect(results[9].slice(0, 3)).toStrictEqual(expected[9]);
-      expect(results[10]).toStrictEqual(expected[10]);
-      expect(results[11].slice(0, 3)).toStrictEqual(expected[11]);
-      expect(results[12].slice(0, 3)).toStrictEqual(expected[12]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [8]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1748,41 +1648,26 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'generate', height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { sent: 12.5, change: 150000 }};
+    const expected = [
+      ['hincrbyfloat', 'Pool1:payments:primary:paid', 'example1', 12.5],
+      ['hset', 'Pool1:payments:primary:balances', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
+      ['del', 'Pool1:rounds:primary:round-180:counts'],
+      ['del', 'Pool1:rounds:primary:round-180:shares'],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 12.5],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hincrbyfloat', 'Pool1:payments:primary:paid', 'example1', 12.5],
-        ['hset', 'Pool1:payments:primary:balances', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:confirmed', 'serialized'],
-        ['del', 'Pool1:rounds:primary:round-180:counts'],
-        ['del', 'Pool1:rounds:primary:round-180:shares'],
-        ['del', 'Pool1:rounds:primary:round-180:times'],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 12.5],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(13);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4]).toStrictEqual(expected[4]);
-      expect(results[5]).toStrictEqual(expected[5]);
-      expect(results[6]).toStrictEqual(expected[6]);
-      expect(results[7]).toStrictEqual(expected[7]);
-      expect(results[8].slice(0, 3)).toStrictEqual(expected[8]);
-      expect(results[9].slice(0, 3)).toStrictEqual(expected[9]);
-      expect(results[10]).toStrictEqual(expected[10]);
-      expect(results[11].slice(0, 3)).toStrictEqual(expected[11]);
-      expect(results[12].slice(0, 3)).toStrictEqual(expected[12]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [9]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1792,29 +1677,21 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'kicked', height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { immature: 0 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:kicked', 'serialized'],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:kicked', 'serialized'],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(7);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2].slice(0, 3)).toStrictEqual(expected[2]);
-      expect(results[3].slice(0, 3)).toStrictEqual(expected[3]);
-      expect(results[4]).toStrictEqual(expected[4]);
-      expect(results[5].slice(0, 3)).toStrictEqual(expected[5]);
-      expect(results[6].slice(0, 3)).toStrictEqual(expected[6]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [10]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1824,35 +1701,23 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'kicked', delete: true, height: 180, hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { immature: 0 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
+      ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:kicked', 'serialized'],
+      ['del', 'Pool1:rounds:primary:round-180:counts'],
+      ['del', 'Pool1:rounds:primary:round-180:shares'],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 0],
-        ['smove', 'Pool1:blocks:primary:pending', 'Pool1:blocks:primary:kicked', 'serialized'],
-        ['del', 'Pool1:rounds:primary:round-180:counts'],
-        ['del', 'Pool1:rounds:primary:round-180:shares'],
-        ['del', 'Pool1:rounds:primary:round-180:times'],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(10);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
-      expect(results[3]).toStrictEqual(expected[3]);
-      expect(results[4]).toStrictEqual(expected[4]);
-      expect(results[5].slice(0, 3)).toStrictEqual(expected[5]);
-      expect(results[6].slice(0, 3)).toStrictEqual(expected[6]);
-      expect(results[7]).toStrictEqual(expected[7]);
-      expect(results[8].slice(0, 3)).toStrictEqual(expected[8]);
-      expect(results[9].slice(0, 3)).toStrictEqual(expected[9]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [11]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].primary.payments.magnitude = 100000000;
@@ -1862,31 +1727,22 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { immature: 1250000000, change: 50000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:primary:balances', 'example1', 0.5],
+      ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
+      ['hset', 'Pool1:payments:primary:immature', 'example1', 12.5],
+      ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
+      ['hset', 'Pool1:payments:primary:counts', 'last', 1637878085886],
+      ['hset', 'Pool1:payments:primary:counts', 'next', 1637885285886]];
     poolPayments.handleUpdates(config, 'payments', 'primary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:primary:balances', 'example1', 0.5],
-        ['hset', 'Pool1:payments:primary:generate', 'example1', 0],
-        ['hset', 'Pool1:payments:primary:immature', 'example1', 12.5],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:primary:current:solo:hashrate', 0],
-        ['hincrbyfloat', 'Pool1:payments:primary:counts', 'total', 0],
-        ['hset', 'Pool1:payments:primary:counts', 'last'],
-        ['hset', 'Pool1:payments:primary:counts', 'next']];
-      expect(results.length).toBe(8);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2]).toStrictEqual(expected[2]);
-      expect(results[3].slice(0, 3)).toStrictEqual(expected[3]);
-      expect(results[4].slice(0, 3)).toStrictEqual(expected[4]);
-      expect(results[5]).toStrictEqual(expected[5]);
-      expect(results[6].slice(0, 3)).toStrictEqual(expected[6]);
-      expect(results[7].slice(0, 3)).toStrictEqual(expected[7]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });
   });
 
   test('Test final updates given pipeline end [12]', (done) => {
+    MockDate.set(1637878085886);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     const poolPayments = new PoolPayments(logger, client);
     poolPayments.poolConfigs['Pool1'].auxiliary = { payments: {} };
@@ -1897,17 +1753,11 @@ describe('Test payments functionality', () => {
     const config = poolPayments.poolConfigs['Pool1'];
     const rounds = [{ category: 'immature', hash: 'hash', serialized: 'serialized', confirmations: 40 }];
     const workers = { 'example1': { immature: 1250000000 }};
+    const expected = [
+      ['hset', 'Pool1:payments:auxiliary:generate', 'example1', 0],
+      ['hset', 'Pool1:payments:auxiliary:immature', 'example1', 12.5]];
     poolPayments.handleUpdates(config, 'checks', 'auxiliary', Date.now(), [rounds, workers], (error, results) => {
-      const expected = [
-        ['hset', 'Pool1:payments:auxiliary:generate', 'example1', 0],
-        ['hset', 'Pool1:payments:auxiliary:immature', 'example1', 12.5],
-        ['zremrangebyscore', 'Pool1:rounds:auxiliary:current:shared:hashrate', 0],
-        ['zremrangebyscore', 'Pool1:rounds:auxiliary:current:solo:hashrate', 0]];
-      expect(results.length).toBe(4);
-      expect(results[0]).toStrictEqual(expected[0]);
-      expect(results[1]).toStrictEqual(expected[1]);
-      expect(results[2].slice(0, 3)).toStrictEqual(expected[2]);
-      expect(results[3].slice(0, 3)).toStrictEqual(expected[3]);
+      expect(results).toStrictEqual(expected);
       console.log.mockClear();
       done();
     });

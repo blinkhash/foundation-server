@@ -9,13 +9,14 @@ const Stratum = require('foundation-stratum');
 ////////////////////////////////////////////////////////////////////////////////
 
 // Main Stratum Function
-const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
+const PoolStratum = function (logger, poolConfig, portalConfig, poolShares, poolStatistics) {
 
   const _this = this;
   process.setMaxListeners(0);
 
   this.pool = poolConfig.name;
   this.poolConfig = poolConfig;
+  this.portalConfig = portalConfig;
   this.poolShares = poolShares;
   this.poolStatistics = poolStatistics;
   this.forkId = process.env.forkId;
@@ -43,8 +44,8 @@ const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
   };
 
   // Determine Share Viability
-  this.checkShare = function(shareData, shareValid) {
-    if (!shareValid) {
+  this.checkShare = function(shareData, shareType) {
+    if (['stale', 'invalid'].includes(shareType)) {
       logger.debug(logSystem, logComponent, logSubCat, 'We thought a share was found but it was rejected by the daemon.');
     } else if (shareData.blockType !== 'auxiliary') {
       logger.debug(logSystem, logComponent, logSubCat, `Share accepted at difficulty ${ shareData.difficulty }/${ shareData.shareDiff } by ${ shareData.addrPrimary } [${ shareData.ip }]`);
@@ -69,7 +70,7 @@ const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
   // Check for Valid Primary Worker Address
   this.checkPrimaryWorker = function(workerName, callback) {
     const address = workerName.split('.')[0];
-    _this.poolStratum.primary.daemon.cmd('validateaddress', [address], (results) => {
+    _this.poolStratum.primary.daemon.cmd('validateaddress', [address], false, (results) => {
       const isValid = results.filter((result) => {
         return result.response.isvalid;
       }).length > 0;
@@ -81,7 +82,7 @@ const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
   this.checkAuxiliaryWorker = function(workerName, callback) {
     if (workerName && _this.poolConfig.auxiliary && _this.poolConfig.auxiliary.enabled) {
       const address = workerName.split('.')[0];
-      _this.poolStratum.auxiliary.daemon.cmd('validateaddress', [address], (results) => {
+      _this.poolStratum.auxiliary.daemon.cmd('validateaddress', [address], false, (results) => {
         const isValid = results.filter((result) => {
           return result.response.isvalid;
         }).length > 0;
@@ -96,11 +97,11 @@ const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
 
   // Handle Share Submissions
   /* istanbul ignore next */
-  this.handleShares = function(shareData, shareValid, blockValid, callback) {
-    _this.poolShares.handleShares(shareData, shareValid, blockValid, () => {
+  this.handleShares = function(shareData, shareType, blockValid, callback) {
+    _this.poolShares.handleShares(shareData, shareType, blockValid, () => {
       _this.checkPrimary(shareData, blockValid);
       _this.checkAuxiliary(shareData, blockValid);
-      _this.checkShare(shareData, shareValid);
+      _this.checkShare(shareData, shareType);
       callback();
     }, () => {});
   };
@@ -116,8 +117,8 @@ const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
     poolStratum.on('difficultyUpdate', (workerName, diff) => {
       logger.debug(logSystem, logComponent, logSubCat, `Difficulty update to ${ diff } for worker: ${ JSON.stringify(workerName) }`);
     });
-    poolStratum.on('share', (shareData, shareValid, blockValid, callback) => {
-      _this.handleShares(shareData, shareValid, blockValid, callback);
+    poolStratum.on('share', (shareData, shareType, blockValid, callback) => {
+      _this.handleShares(shareData, shareType, blockValid, callback);
     });
     return poolStratum;
   };
@@ -132,7 +133,7 @@ const PoolStratum = function (logger, poolConfig, poolShares, poolStatistics) {
 
   // Build Pool from Configuration
   this.setupStratum = function(callback) {
-    let poolStratum = Stratum.create(_this.poolConfig, _this.authorizeWorker, callback);
+    let poolStratum = Stratum.create(_this.poolConfig, _this.portalConfig, _this.authorizeWorker, callback);
     poolStratum = _this.handleEvents(poolStratum);
     poolStratum.setupPool();
     _this.handleStatistics(poolStratum);
