@@ -14,11 +14,11 @@ For help with getting started, you can check out the documentation for the platf
 
 Install guide:
 
-git clone https://github.com/blinkhash/blinkhash-server.git
+sudo apt-get install build-essential libsodium-dev libboost-system-dev
 
-cd blinkhash-server
+git clone https://github.com/BlackPeter13/foundation-v1-server.git foundation-server
 
-npm install
+cd foundation-server && npm install
 
 [change configurations here]
 
