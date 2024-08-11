@@ -13,9 +13,9 @@
     "litecoin",
     "scrypt"
   ],
-  "homepage": "https://github.com/blinkhash/foundation-server",
+  "homepage": "https://github.com/BlackPeter13/foundation-v1-server",
   "bugs": {
-    "url": "https://github.com/blinkhash/foundation-server/issues"
+    "url": "https://github.com/BlackPeter13/foundation-v1-server/issues"
   },
   "license": "GPL-2.0",
   "author": {
@@ -43,7 +43,7 @@
   "contributors": [],
   "repository": {
     "type": "git",
-    "url": "https://github.com/blinkhash/foundation-server.git"
+    "url": "https://github.com/BlackPeter13/foundation-v1-server.git"
   },
   "dependencies": {
     "apicache": "^1.6.3",
