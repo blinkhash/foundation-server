@@ -58,7 +58,7 @@
     "foundation-stratum": "0.0.42",
     "nodemon": "2.0.17",
     "pm2": "^5.4.0",
-    "redis": "^3.1.1"
+    "redis": "^4.6.15"
   },
   "devDependencies": {
     "codecov": "^3.8.1",
