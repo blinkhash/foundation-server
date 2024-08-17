@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        node-version: [12.x, 13.x, 14.x, 15.x]
+        node-version: [15.x]
     steps:
       - uses: actions/checkout@v2
       - name: Test Node.js ${{ matrix.node-version }}
@@ -28,7 +28,7 @@ jobs:
       - name: Save Coverage Checks
         uses: actions/setup-node@v1
         with:
-          node-version: 12.16
+          node-version: 15.x
       - run: sudo apt-get install build-essential libsodium-dev libboost-system-dev
       - run: npm install && npm install -g codecov
       - run: npm run test && codecov

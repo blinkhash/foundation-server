@@ -54,7 +54,7 @@
     "cors": "^2.8.5",
     "dateformat": "4.6.3",
     "express": "4.19.2",
-    "express-rate-limit": "^5.5.1",
+    "express-rate-limit": "^7.3.1",
     "foundation-stratum": "0.0.42",
     "nodemon": "2.0.17",
     "pm2": "^5.4.0",
