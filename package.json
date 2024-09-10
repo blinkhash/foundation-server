@@ -47,17 +47,17 @@
   },
   "dependencies": {
     "apicache": "^1.6.3",
-    "async": "3.2.2",
-    "body-parser": "1.20.0",
+    "async": "3.2.6",
+    "body-parser": "1.20.2",
     "colors": "1.4.0",
     "compression": "*",
     "cors": "^2.8.5",
     "dateformat": "4.6.3",
-    "express": "4.17.3",
+    "express": "4.19.2",
     "express-rate-limit": "^5.5.1",
     "foundation-stratum": "0.0.42",
-    "nodemon": "2.0.15",
-    "pm2": "^5.2.0",
+    "nodemon": "2.0.22",
+    "pm2": "^5.4.2",
     "redis": "^3.1.1"
   },
   "devDependencies": {
