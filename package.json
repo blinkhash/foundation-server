@@ -57,7 +57,7 @@
     "express-rate-limit": "^7.4.0",
     "foundation-stratum": "0.0.42",
     "nodemon": "2.0.17",
-    "pm2": "^5.4.0",
+    "pm2": "^5.4.3",
     "redis": "^4.7.0"
   },
   "devDependencies": {
